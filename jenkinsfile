@@ -1,11 +1,11 @@
 pipeline{
     agent any
     tools{
-        jdk 'jdk-17'
-        nodejs 'Node16'
+        jdk 'jdk:17'
+        nodejs 'Nodejs'
     }
     environment {
-        SCANNER_HOME=tool 'sonar-scanner'
+        SCANNER_HOME=tool 'sonarscanner'
     }
     stages {
         stage('clean workspace'){
@@ -15,12 +15,12 @@ pipeline{
         }
         stage('Checkout from Git'){
             steps{
-                git branch: 'main', url: 'https://github.com/Aseemakram19/bingo1.git'
+                git branch: 'main', credentialsId: 'docker', url: 'https://github.com/Tanaji199/bingo1.git'
             }
         }
         stage("Sonarqube Analysis "){
             steps{
-                withSonarQubeEnv('sonar-server') {
+                withSonarQubeEnv('sonarserver') {
                     sh ''' $SCANNER_HOME/bin/sonar-scanner -Dsonar.projectName=Bingo \
                     -Dsonar.projectKey=Bingo '''
                 }
@@ -29,8 +29,8 @@ pipeline{
         stage("quality gate"){
            steps {
                 script {
-                    waitForQualityGate abortPipeline: false, credentialsId: 'Sonar-token' 
-                }
+                    waitForQualityGate abortPipeline: false, credentialsId: 'Sonartoken' 
+                } 
             } 
         }
         stage('Install Dependencies') {
@@ -54,20 +54,20 @@ pipeline{
                 script{
                    withDockerRegistry(credentialsId: 'docker', toolName: 'docker'){   
                        sh "docker build -t bingo ."
-                       sh "docker tag bingo aseemakram19/bingo:latest "
-                       sh "docker push aseemakram19/bingo:latest "
+                       sh "docker tag bingo tanaji119/bingo:latest "
+                       sh "docker push tanaji119/bingo:latest "
                     }
                 }
             }
         }
         stage("TRIVY"){
             steps{
-                sh "trivy image aseemakram19/bingo:latest > trivyimage.txt" 
+                sh "trivy image tanaji/bingo:latest > trivyimage.txt" 
             }
         }
         stage('Deploy to container'){
             steps{
-                sh 'docker run -d --name bingo -p 3000:3000 aseemakram19/bingo:latest'
+                sh 'docker run -d --name bingo -p 3000:3000 tanaji119/bingo:latest'
             }
         }
 
